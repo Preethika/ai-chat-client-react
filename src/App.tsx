@@ -1,37 +1,54 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import Header from "./Shared/Header/Header.tsx";
 import TextInput from "./Shared/TextInput/TextInput.tsx";
+import "./App.css";
 
 function App() {
+  const [messages, setMessages] = useState<
+    { role: string; content: string }[]
+  >([]);
   const [input, setInput] = useState("");
-  const [response, setResponse] = useState("");
 
   const sendMessage = async () => {
-    setResponse("");
+    const updatedMessages = [
+      ...messages,
+      { role: "user", content: input }
+    ];
+
+    setMessages(updatedMessages);
+    setInput("");
 
     const res = await fetch("http://localhost:3000/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message: input })
+      body: JSON.stringify({
+        messages: updatedMessages
+      })
     });
 
-    const reader = res?.body?.getReader();
+    if (!res.body) {
+      throw new Error("Response body is null");
+    }
+    const reader = res.body.getReader();
     const decoder = new TextDecoder();
 
-    let done = false;
+    let assistantMessage = "";
 
-    while (!done && reader) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
 
       const chunk = decoder.decode(value);
-      setResponse(prev => prev + chunk);
-    }
+      assistantMessage += chunk;
 
+      setMessages([
+        ...updatedMessages,
+        { role: "assistant", content: assistantMessage }
+      ]);
+    }
   };
 
   return (
@@ -44,9 +61,13 @@ function App() {
         marginLeft: "10%",
         marginRight: "10%"
       }}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {response}
-        </ReactMarkdown>
+        <div className="chat">
+          {messages.map((msg, index) => (
+            <div key={index} className={msg.role}>
+              <ReactMarkdown>{msg.content}</ReactMarkdown>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{
