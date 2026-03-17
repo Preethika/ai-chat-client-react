@@ -1,3 +1,6 @@
+# React AI chat application  (LLM)
+This is a React.js application that provides AI chat feature with the **Ollama AI server. This app connects with Node backend (https://github.com/Preethika/ai-chat-server-node)
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
